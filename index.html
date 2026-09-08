@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrepRise - NEET & JEE Preparation</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f7f9fc;
+      color: #172033;
+    }
+
+    header {
+      background: white;
+      padding: 18px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e8edf3;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: #475569;
+      margin-left: 25px;
+      font-size: 15px;
+    }
+
+    .login {
+      background: #2563eb;
+      color: white !important;
+      padding: 10px 18px;
+      border-radius: 8px;
+    }
+
+    .hero {
+      padding: 80px 7%;
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      max-width: 850px;
+      margin: auto;
+      line-height: 1.15;
+    }
+
+    .hero h1 span {
+      color: #2563eb;
+    }
+
+    .hero p {
+      max-width: 650px;
+      margin: 20px auto;
+      color: #64748b;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .buttons {
+      margin-top: 30px;
+    }
+
+    .btn {
+      border: none;
+      padding: 14px 25px;
+      border-radius: 9px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .secondary {
+      background: white;
+      color: #2563eb;
+      border: 1px solid #2563eb;
+    }
+
+    section {
+      padding: 65px 7%;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .section-title h2 {
+      font-size: 32px;
+    }
+
+    .section-title p {
+      color: #64748b;
+      margin-top: 10px;
+    }
+
+    .exam-container {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      flex-wrap: wrap;
+    }
+
+    .exam-card {
+      background: white;
+      width: 330px;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+      text-align: center;
+    }
+
+    .exam-card .icon {
+      font-size: 45px;
+      margin-bottom: 15px;
+    }
+
+    .exam-card h3 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .exam-card p {
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .subjects {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 20px;
+    }
+
+    .subject {
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 5px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .subject h3 {
+      margin: 10px 0;
+    }
+
+    .subject p {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .features {
+      background: #0f172a;
+      color: white;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .feature {
+      background: #1e293b;
+      padding: 25px;
+      border-radius: 14px;
+    }
+
+    .feature h3 {
+      margin: 10px 0;
+    }
+
+    .feature p {
+      color: #cbd5e1;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      background: #020617;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 650px) {
+      .hero h1 {
+        font-size: 34px;
+      }
+
+      nav a:not(.login) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">PrepRise</div>
+
+    <nav>
+      <a href="#exams">Exams</a>
+      <a href="#subjects">Subjects</a>
+      <a href="#features">Features</a>
+      <a href="#" class="login">Login</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>
+      Prepare Smarter for
+      <span>NEET & JEE</span>
+    </h1>
+
+    <p>
+      Practice high-quality questions, solve PYQs,
+      take mock tests and understand your preparation
+      with detailed performance analysis.
+    </p>
+
+    <div class="buttons">
+      <button class="btn primary" onclick="chooseExam('NEET')">
+        Start NEET Preparation
+      </button>
+
+      <button class="btn secondary" onclick="chooseExam('JEE')">
+        Start JEE Preparation
+      </button>
+    </div>
+  </section>
+
+  <section id="exams">
+    <div class="section-title">
+      <h2>Choose Your Exam</h2>
+      <p>Start your preparation according to your goal.</p>
+    </div>
+
+    <div class="exam-container">
+
+      <div class="exam-card">
+        <div class="icon">🧬</div>
+        <h3>NEET</h3>
+        <p>
+          Biology, Physics and Chemistry
+          practice designed for NEET aspirants.
+        </p>
+
+        <button class="btn primary" onclick="chooseExam('NEET')">
+          Practice NEET
+        </button>
+      </div>
+
+      <div class="exam-card">
+        <div class="icon">⚡</div>
+        <h3>JEE</h3>
+        <p>
+          Physics, Chemistry and Mathematics
+          practice for JEE Main & Advanced.
+        </p>
+
+        <button class="btn primary" onclick="chooseExam('JEE')">
+          Practice JEE
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="subjects">
+    <div class="section-title">
+      <h2>Subjects</h2>
+      <p>Build strong concepts with focused practice.</p>
+    </div>
+
+    <div class="subjects">
+
+      <div class="subject">
+        <div>⚛️</div>
+        <h3>Physics</h3>
+        <p>Conceptual questions and numerical problems.</p>
+      </div>
+
+      <div class="subject">
+        <div>🧪</div>
+        <h3>Chemistry</h3>
+        <p>Physical, Organic and Inorganic Chemistry.</p>
+      </div>
+
+      <div class="subject">
+        <div>🧬</div>
+        <h3>Biology</h3>
+        <p>NCERT-focused NEET Biology practice.</p>
+      </div>
+
+      <div class="subject">
+        <div>📐</div>
+        <h3>Mathematics</h3>
+        <p>JEE Main and Advanced level problems.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="features" id="features">
+
+    <div class="section-title">
+      <h2>Everything You Need</h2>
+      <p style="color:#cbd5e1;">
+        A complete preparation platform.
+      </p>
+    </div>
+
+    <div class="feature-grid">
+
+      <div class="feature">
+        <div>🎯</div>
+        <h3>Chapter Practice</h3>
+        <p>
+          Practice questions chapter by chapter
+          and improve your concepts.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div>📝</div>
+        <h3>Mock Tests</h3>
+        <p>
+          Attempt full-length tests in an
+          exam-like environment.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div>📊</div>
+        <h3>Performance Analysis</h3>
+        <p>
+          Track your score, accuracy and
+          identify weak topics.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div>🔥</div>
+        <h3>Daily Practice</h3>
+        <p>
+          Stay consistent with daily questions
+          and preparation goals.
+        </p>
+      </div>
+
+    </div>
+
+  </section>
+
+  <footer>
+    © 2026 PrepRise — NEET & JEE Preparation Platform
+  </footer>
+
+  <script>
+    function chooseExam(exam) {
+      alert(
+        exam +
+        " preparation selected! 🚀\n\n" +
+        "Next we will connect this button to the question bank."
+      );
+    }
+  </script>
+
+</body>
+</html>
