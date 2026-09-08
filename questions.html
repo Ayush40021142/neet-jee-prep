@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>NEET Biology Practice | PrepRise</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f5f7fb;
+      color: #172033;
+    }
+
+    header {
+      background: white;
+      padding: 18px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .logo {
+      color: #2563eb;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .test-info {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .top-card {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 9px;
+      background: #e5e7eb;
+      border-radius: 20px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      width: 20%;
+      background: #2563eb;
+      transition: 0.3s;
+    }
+
+    .question-card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.06);
+    }
+
+    .question-number {
+      color: #2563eb;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .question {
+      font-size: 21px;
+      line-height: 1.5;
+      margin-bottom: 25px;
+    }
+
+    .option {
+      border: 2px solid #e5e7eb;
+      padding: 15px;
+      margin: 12px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .option:hover {
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+
+    .option.selected {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .option.correct {
+      border-color: #16a34a;
+      background: #dcfce7;
+    }
+
+    .option.wrong {
+      border-color: #dc2626;
+      background: #fee2e2;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      padding: 13px 22px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #334155;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .explanation {
+      display: none;
+      margin-top: 22px;
+      padding: 18px;
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    .result {
+      display: none;
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.06);
+    }
+
+    .score {
+      font-size: 52px;
+      font-weight: 800;
+      color: #2563eb;
+      margin: 20px 0;
+    }
+
+    .result p {
+      color: #64748b;
+      margin: 8px 0;
+    }
+
+    .restart {
+      margin-top: 20px;
+    }
+
+    @media(max-width:600px) {
+      .question-card {
+        padding: 20px;
+      }
+
+      .question {
+        font-size: 18px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">PrepRise</div>
+
+  <div class="test-info">
+    NEET Biology • Practice
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="top-card">
+    <strong id="progressText">Question 1 of 5</strong>
+
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+  </div>
+
+  <div class="question-card" id="questionCard">
+
+    <div class="question-number" id="questionNumber">
+      Question 1
+    </div>
+
+    <div class="question" id="question">
+      Loading question...
+    </div>
+
+    <div id="options"></div>
+
+    <div class="explanation" id="explanation"></div>
+
+    <div class="actions">
+
+      <button
+        class="secondary"
+        id="previousBtn"
+        onclick="previousQuestion()">
+        ← Previous
+      </button>
+
+      <button
+        class="primary"
+        id="checkBtn"
+        onclick="checkAnswer()">
+        Check Answer
+      </button>
+
+      <button
+        class="primary"
+        id="nextBtn"
+        onclick="nextQuestion()"
+        style="display:none;">
+        Next →
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="result" id="result">
+
+    <h2>Test Completed 🎉</h2>
+
+    <div class="score" id="score">
+      0/5
+    </div>
+
+    <p id="correctText"></p>
+    <p id="wrongText"></p>
+
+    <button
+      class="primary restart"
+      onclick="restartTest()">
+      Try Again
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+const questions = [
+
+  {
+    question:
+      "Which of the following is considered the functional unit of the kidney?",
+
+    options: [
+      "Neuron",
+      "Nephron",
+      "Alveolus",
+      "Glomerulus"
+    ],
+
+    answer: 1,
+
+    explanation:
+      "The nephron is the structural and functional unit of the kidney. Each nephron participates in filtration, reabsorption and secretion during urine formation."
+  },
+
+  {
+    question:
+      "Which phase of the cell cycle is characterized by DNA replication?",
+
+    options: [
+      "G1 phase",
+      "S phase",
+      "G2 phase",
+      "M phase"
+    ],
+
+    answer: 1,
+
+    explanation:
+      "DNA replication occurs during the S (synthesis) phase of interphase."
+  },
+
+  {
+    question:
+      "Which molecule carries amino acids to the ribosome during protein synthesis?",
+
+    options: [
+      "mRNA",
+      "rRNA",
+      "tRNA",
+      "DNA"
+    ],
+
+    answer: 2,
+
+    explanation:
+      "Transfer RNA (tRNA) carries specific amino acids to the ribosome and recognizes codons on mRNA through its anticodon."
+  },
+
+  {
+    question:
+      "In humans, the oxygen-carrying pigment present in red blood cells is:",
+
+    options: [
+      "Myoglobin",
+      "Hemocyanin",
+      "Haemoglobin",
+      "Chlorophyll"
+    ],
+
+    answer: 2,
+
+    explanation:
+      "Haemoglobin is the iron-containing respiratory pigment in red blood cells that binds oxygen and helps transport it through the blood."
+  },
+
+  {
+    question:
+      "Which organelle is primarily associated with aerobic cellular respiration?",
+
+    options: [
+      "Ribosome",
+      "Mitochondrion",
+      "Golgi apparatus",
+      "Lysosome"
+    ],
+
+    answer: 1,
+
+    explanation:
+      "Mitochondria are the major sites of aerobic respiration and ATP production in eukaryotic cells."
+  }
+
+];
+
+
+let currentQuestion = 0;
+let selectedAnswer = null;
+let userAnswers = [];
+
+
+function loadQuestion() {
+
+  const q = questions[currentQuestion];
+
+  document.getElementById("questionNumber").innerText =
+    "Question " + (currentQuestion + 1);
+
+  document.getElementById("progressText").innerText =
+    "Question " + (currentQuestion + 1) +
+    " of " + questions.length;
+
+  document.getElementById("question").innerText =
+    q.question;
+
+  document.getElementById("progress").style.width =
+    ((currentQuestion + 1) / questions.length * 100) + "%";
+
+
+  const optionsContainer =
+    document.getElementById("options");
+
+  optionsContainer.innerHTML = "";
+
+  q.options.forEach((option, index) => {
+
+    const div = document.createElement("div");
+
+    div.className = "option";
+
+    div.innerText =
+      String.fromCharCode(65 + index) + ". " + option;
+
+    div.onclick = function() {
+      selectOption(index);
+    };
+
+    optionsContainer.appendChild(div);
+
+  });
+
+
+  selectedAnswer = userAnswers[currentQuestion] ?? null;
+
+  if (selectedAnswer !== null) {
+
+    const options =
+      document.querySelectorAll(".option");
+
+    options[selectedAnswer].classList.add("selected");
+
+  }
+
+
+  document.getElementById("explanation").style.display = "none";
+
+  document.getElementById("checkBtn").style.display =
+    "inline-block";
+
+  document.getElementById("nextBtn").style.display =
+    "none";
+
+  document.getElementById("previousBtn").disabled =
+    currentQuestion === 0;
+
+}
+
+
+function selectOption(index) {
+
+  selectedAnswer = index;
+
+  const options =
+    document.querySelectorAll(".option");
+
+  options.forEach(option => {
+    option.classList.remove("selected");
+  });
+
+  options[index].classList.add("selected");
+
+}
+
+
+function checkAnswer() {
+
+  if (selectedAnswer === null) {
+
+    alert("Please select an answer first.");
+
+    return;
+
+  }
+
+  userAnswers[currentQuestion] =
+    selectedAnswer;
+
+  const q = questions[currentQuestion];
+
+  const options =
+    document.querySelectorAll(".option");
+
+
+  options.forEach((option, index) => {
+
+    option.onclick = null;
+
+    if (index === q.answer) {
+      option.classList.add("correct");
+    }
+
+    if (
+      index === selectedAnswer &&
+      selectedAnswer !== q.answer
+    ) {
+      option.classList.add("wrong");
+    }
+
+  });
+
+
+  const explanation =
+    document.getElementById("explanation");
+
+  explanation.innerHTML =
+    "<strong>Explanation:</strong><br>" +
+    q.explanation;
+
+  explanation.style.display = "block";
+
+
+  document.getElementById("checkBtn").style.display =
+    "none";
+
+  document.getElementById("nextBtn").style.display =
+    "inline-block";
+
+}
+
+
+function nextQuestion() {
+
+  if (currentQuestion < questions.length - 1) {
+
+    currentQuestion++;
+
+    loadQuestion();
+
+  } else {
+
+    showResult();
+
+  }
+
+}
+
+
+function previousQuestion() {
+
+  if (currentQuestion > 0) {
+
+    currentQuestion--;
+
+    loadQuestion();
+
+  }
+
+}
+
+
+function showResult() {
+
+  let correct = 0;
+
+  userAnswers.forEach((answer, index) => {
+
+    if (answer === questions[index].answer) {
+      correct++;
+    }
+
+  });
+
+
+  const wrong =
+    questions.length - correct;
+
+
+  document.getElementById("questionCard").style.display =
+    "none";
+
+  document.querySelector(".top-card").style.display =
+    "none";
+
+  document.getElementById("result").style.display =
+    "block";
+
+
+  document.getElementById("score").innerText =
+    correct + "/" + questions.length;
+
+  document.getElementById("correctText").innerText =
+    "Correct answers: " + correct;
+
+  document.getElementById("wrongText").innerText =
+    "Incorrect answers: " + wrong;
+
+}
+
+
+function restartTest() {
+
+  currentQuestion = 0;
+
+  selectedAnswer = null;
+
+  userAnswers = [];
+
+  document.getElementById("result").style.display =
+    "none";
+
+  document.getElementById("questionCard").style.display =
+    "block";
+
+  document.querySelector(".top-card").style.display =
+    "block";
+
+  loadQuestion();
+
+}
+
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>
