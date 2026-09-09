@@ -627,6 +627,24 @@ function selectOption(index) {
 
 
 function checkAnswer() {
+  if (selectedAnswer === null) {
+    alert("Please select an answer first.");
+    return;
+  }
+
+  userAnswers[currentQuestion] = selectedAnswer;
+
+  const q = questions[currentQuestion];
+  const correctAnswer = q.correct_answer;
+
+  if (selectedAnswer === correctAnswer) {
+    alert("✅ Correct! +4 marks");
+  } else {
+    alert("❌ Wrong! -1 mark");
+  }
+
+  updateProgress();
+}
 
   if (selectedAnswer === null) {
 
@@ -717,6 +735,50 @@ function previousQuestion() {
 
 
 function showResult() {
+  clearInterval(timerInterval);
+
+  let correct = 0;
+  let wrong = 0;
+  let unanswered = 0;
+
+  questions.forEach((q, index) => {
+    const answer = userAnswers[index];
+
+    if (!answer) {
+      unanswered++;
+    } else if (answer === q.correct_answer) {
+      correct++;
+    } else {
+      wrong++;
+    }
+  });
+
+  const score = (correct * 4) - (wrong * 1);
+  const totalMarks = questions.length * 4;
+  const accuracy = questions.length
+    ? ((correct / questions.length) * 100).toFixed(1)
+    : 0;
+
+  document.querySelector(".question-card").innerHTML = `
+    <div style="text-align:center; padding:40px 20px;">
+      <h2>🎉 Test Completed!</h2>
+
+      <h1 style="font-size:48px; margin:20px 0;">
+        ${score} / ${totalMarks}
+      </h1>
+
+      <p>✅ Correct: <strong>${correct}</strong></p>
+      <p>❌ Wrong: <strong>${wrong}</strong></p>
+      <p>⭕ Unanswered: <strong>${unanswered}</strong></p>
+      <p>📊 Accuracy: <strong>${accuracy}%</strong></p>
+
+      <button onclick="restartTest()" 
+        style="margin-top:25px; padding:12px 25px; cursor:pointer;">
+        Restart Test
+      </button>
+    </div>
+  `;
+}
 
   let correct = 0;
   let wrong = 0;
