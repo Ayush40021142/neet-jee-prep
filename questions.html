@@ -383,7 +383,76 @@ async function getData(url) {
 
 
 async function startTest() {
+  try {
 
+    const url =
+      SUPABASE_URL +
+      "/rest/v1/test_questions" +
+      "?select=question_number,questions(*)" +
+      "&test_id=eq.1" +
+      "&order=question_number.asc";
+
+    const data = await getData(url);
+
+    console.log("TEST DATA:", data);
+
+    if (!data || data.length === 0) {
+      throw new Error("Test ke questions nahi mile.");
+    }
+
+    questions = data
+      .map(item => {
+        const q = item.questions;
+
+        if (!q) return null;
+
+        return {
+          id: q.id,
+
+          question: q.question,
+
+          options: [
+            q.option_a,
+            q.option_b,
+            q.option_c,
+            q.option_d
+          ],
+
+          answer: convertAnswer(q.correct_answer),
+
+          explanation:
+            q.explanation ||
+            "Explanation available nahi hai."
+        };
+      })
+      .filter(Boolean);
+
+    if (questions.length === 0) {
+      throw new Error("Questions database se load nahi hue.");
+    }
+
+    userAnswers =
+      new Array(questions.length).fill(null);
+
+    currentQuestion = 0;
+
+    loadQuestion();
+
+    startTimer();
+
+  } catch (error) {
+
+    console.error("ERROR:", error);
+
+    document.getElementById("question").innerText =
+      "Question load nahi hua.";
+
+    document.getElementById("options").innerHTML =
+      "<div style='color:red; padding:15px;'>" +
+      error.message +
+      "</div>";
+  }
+}
   try {
 
     // Get all tests
