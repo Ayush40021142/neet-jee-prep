@@ -289,104 +289,185 @@
 
 <script>
 
+<script>
+
 const SUPABASE_URL = "https://pkhywkkcvzfcpqxkmbbf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_D02iAMs301aETaagSP48rQ_qR1pMZ5S";
 
-  const questions = [
-  {
-    question:
-      "Which of the following is considered the functional unit of the kidney?",
+const TEST_TITLE = "NEET Biology Starter Test";
 
-    options: [
-      "Neuron",
-      "Nephron",
-      "Alveolus",
-      "Glomerulus"
-    ],
-
-    answer: 1,
-
-    explanation:
-      "The nephron is the structural and functional unit of the kidney. Each nephron participates in filtration, reabsorption and secretion during urine formation."
-  },
-
-  {
-    question:
-      "Which phase of the cell cycle is characterized by DNA replication?",
-
-    options: [
-      "G1 phase",
-      "S phase",
-      "G2 phase",
-      "M phase"
-    ],
-
-    answer: 1,
-
-    explanation:
-      "DNA replication occurs during the S (synthesis) phase of interphase."
-  },
-
-  {
-    question:
-      "Which molecule carries amino acids to the ribosome during protein synthesis?",
-
-    options: [
-      "mRNA",
-      "rRNA",
-      "tRNA",
-      "DNA"
-    ],
-
-    answer: 2,
-
-    explanation:
-      "Transfer RNA (tRNA) carries specific amino acids to the ribosome and recognizes codons on mRNA through its anticodon."
-  },
-
-  {
-    question:
-      "In humans, the oxygen-carrying pigment present in red blood cells is:",
-
-    options: [
-      "Myoglobin",
-      "Hemocyanin",
-      "Haemoglobin",
-      "Chlorophyll"
-    ],
-
-    answer: 2,
-
-    explanation:
-      "Haemoglobin is the iron-containing respiratory pigment in red blood cells that binds oxygen and helps transport it through the blood."
-  },
-
-  {
-    question:
-      "Which organelle is primarily associated with aerobic cellular respiration?",
-
-    options: [
-      "Ribosome",
-      "Mitochondrion",
-      "Golgi apparatus",
-      "Lysosome"
-    ],
-
-    answer: 1,
-
-    explanation:
-      "Mitochondria are the major sites of aerobic respiration and ATP production in eukaryotic cells."
-  }
-
-];
-
-
+let questions = [];
 let currentQuestion = 0;
 let selectedAnswer = null;
 let userAnswers = [];
 
 
+async function loadQuestionsFromSupabase() {
+
+  try {
+
+    // 1. Find the test
+    const testResponse = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/tests?title=eq." +
+      encodeURIComponent(TEST_TITLE) +
+      "&select=id,title,total_questions",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!testResponse.ok) {
+      throw new Error("Test load failed: " + testResponse.status);
+    }
+
+    const tests = await testResponse.json();
+
+    if (!tests.length) {
+      throw new Error("Test not found in Supabase.");
+    }
+
+    const testId = tests[0].id;
+
+
+    // 2. Get question IDs connected to this test
+    const tqResponse = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/test_questions?test_id=eq." +
+      testId +
+      "&select=question_id,question_number&order=question_number.asc",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!tqResponse.ok) {
+      throw new Error(
+        "Test questions load failed: " + tqResponse.status
+      );
+    }
+
+    const testQuestions = await tqResponse.json();
+
+    if (!testQuestions.length) {
+      throw new Error("No questions connected to this test.");
+    }
+
+
+    // 3. Load actual questions
+    const questionIds = testQuestions
+      .map(item => item.question_id)
+      .join(",");
+
+    const qResponse = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/questions?id=in.(" +
+      questionIds +
+      ")" +
+      "&select=id,question,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!qResponse.ok) {
+      throw new Error(
+        "Questions load failed: " + qResponse.status
+      );
+    }
+
+    const databaseQuestions = await qResponse.json();
+
+
+    // 4. Put questions in test order
+    questions = testQuestions.map(tq => {
+
+      const q = databaseQuestions.find(
+        item => String(item.id) === String(tq.question_id)
+      );
+
+      if (!q) return null;
+
+      return {
+        id: q.id,
+
+        question:
+          q.question || q.question_text || "Question unavailable",
+
+        options: [
+          q.option_a,
+          q.option_b,
+          q.option_c,
+          q.option_d
+        ],
+
+        answer: convertAnswer(q.correct_answer),
+
+        explanation:
+          q.explanation || "Explanation not available."
+      };
+
+    }).filter(Boolean);
+
+
+    if (!questions.length) {
+      throw new Error("Questions were found, but could not be displayed.");
+    }
+
+
+    userAnswers = new Array(questions.length).fill(null);
+
+    loadQuestion();
+
+  } catch (error) {
+
+    console.error("SUPABASE ERROR:", error);
+
+    document.getElementById("question").innerText =
+      "Question load error.";
+
+    document.getElementById("options").innerHTML =
+      "<p style='color:red;'>" +
+      error.message +
+      "</p>";
+
+  }
+
+}
+
+
+// Converts database answer into 0,1,2,3
+function convertAnswer(answer) {
+
+  if (answer === null || answer === undefined) {
+    return 0;
+  }
+
+  const value = String(answer).trim().toUpperCase();
+
+  if (value === "A" || value === "1") return 0;
+  if (value === "B" || value === "2") return 1;
+  if (value === "C" || value === "3") return 2;
+  if (value === "D" || value === "4") return 3;
+
+  if (value === "0") return 0;
+
+  return 0;
+}
+
+
 function loadQuestion() {
+
+  if (!questions.length) return;
 
   const q = questions[currentQuestion];
 
@@ -394,8 +475,10 @@ function loadQuestion() {
     "Question " + (currentQuestion + 1);
 
   document.getElementById("progressText").innerText =
-    "Question " + (currentQuestion + 1) +
-    " of " + questions.length;
+    "Question " +
+    (currentQuestion + 1) +
+    " of " +
+    questions.length;
 
   document.getElementById("question").innerText =
     q.question;
@@ -409,6 +492,7 @@ function loadQuestion() {
 
   optionsContainer.innerHTML = "";
 
+
   q.options.forEach((option, index) => {
 
     const div = document.createElement("div");
@@ -416,7 +500,9 @@ function loadQuestion() {
     div.className = "option";
 
     div.innerText =
-      String.fromCharCode(65 + index) + ". " + option;
+      String.fromCharCode(65 + index) +
+      ". " +
+      (option || "");
 
     div.onclick = function() {
       selectOption(index);
@@ -427,19 +513,24 @@ function loadQuestion() {
   });
 
 
-  selectedAnswer = userAnswers[currentQuestion] ?? null;
+  selectedAnswer =
+    userAnswers[currentQuestion] ?? null;
+
 
   if (selectedAnswer !== null) {
 
     const options =
       document.querySelectorAll(".option");
 
-    options[selectedAnswer].classList.add("selected");
+    if (options[selectedAnswer]) {
+      options[selectedAnswer].classList.add("selected");
+    }
 
   }
 
 
-  document.getElementById("explanation").style.display = "none";
+  document.getElementById("explanation").style.display =
+    "none";
 
   document.getElementById("checkBtn").style.display =
     "inline-block";
@@ -513,7 +604,8 @@ function checkAnswer() {
     "<strong>Explanation:</strong><br>" +
     q.explanation;
 
-  explanation.style.display = "block";
+  explanation.style.display =
+    "block";
 
 
   document.getElementById("checkBtn").style.display =
@@ -561,7 +653,10 @@ function showResult() {
 
   userAnswers.forEach((answer, index) => {
 
-    if (answer === questions[index].answer) {
+    if (
+      answer !== null &&
+      answer === questions[index].answer
+    ) {
       correct++;
     }
 
@@ -569,7 +664,11 @@ function showResult() {
 
 
   const wrong =
-    questions.length - correct;
+    userAnswers.filter(
+      (answer, index) =>
+        answer !== null &&
+        answer !== questions[index].answer
+    ).length;
 
 
   document.getElementById("questionCard").style.display =
@@ -600,7 +699,8 @@ function restartTest() {
 
   selectedAnswer = null;
 
-  userAnswers = [];
+  userAnswers =
+    new Array(questions.length).fill(null);
 
   document.getElementById("result").style.display =
     "none";
@@ -616,7 +716,10 @@ function restartTest() {
 }
 
 
-loadQuestion();
+// START
+loadQuestionsFromSupabase();
+
+</script>
 
 </script>
 
