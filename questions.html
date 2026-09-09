@@ -300,7 +300,63 @@ let questions = [];
 let currentQuestion = 0;
 let selectedAnswer = null;
 let userAnswers = [];
+let timeLeft = 30 * 60;
+let timerInterval = null;
 
+function startTimer() {
+
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+
+  const timer = document.createElement("div");
+
+  timer.id = "examTimer";
+
+  timer.style.cssText = `
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    background: #2563eb;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 9999;
+  `;
+
+  timer.innerText = "Time: 30:00";
+
+  document.body.appendChild(timer);
+
+  timerInterval = setInterval(() => {
+
+    timeLeft--;
+
+    const minutes =
+      Math.floor(timeLeft / 60);
+
+    const seconds =
+      timeLeft % 60;
+
+    timer.innerText =
+      "Time: " +
+      String(minutes).padStart(2, "0") +
+      ":" +
+      String(seconds).padStart(2, "0");
+
+    if (timeLeft <= 0) {
+
+      clearInterval(timerInterval);
+
+      alert("Time is over! Test submitted.");
+
+      showResult();
+    }
+
+  }, 1000);
+}
 
 async function getData(url) {
 
