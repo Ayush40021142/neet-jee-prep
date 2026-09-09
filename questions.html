@@ -302,163 +302,172 @@ let selectedAnswer = null;
 let userAnswers = [];
 
 
-async function loadQuestionsFromSupabase() {
+async function getData(url) {
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      "Supabase error " +
+      response.status +
+      ": " +
+      errorText
+    );
+  }
+
+  return await response.json();
+}
+
+
+async function startTest() {
 
   try {
 
-    // 1. Find the test
-    const testResponse = await fetch(
+    // Get all tests
+    const tests = await getData(
       SUPABASE_URL +
-      "/rest/v1/tests?title=eq." +
-      encodeURIComponent(TEST_TITLE) +
-      "&select=id,title,total_questions",
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY
-        }
-      }
+      "/rest/v1/tests?select=*"
     );
 
-    if (!testResponse.ok) {
-      throw new Error("Test load failed: " + testResponse.status);
-    }
-
-    const tests = await testResponse.json();
-
-    if (!tests.length) {
-      throw new Error("Test not found in Supabase.");
-    }
-
-    const testId = tests[0].id;
-
-
-    // 2. Get question IDs connected to this test
-    const tqResponse = await fetch(
-      SUPABASE_URL +
-      "/rest/v1/test_questions?test_id=eq." +
-      testId +
-      "&select=question_id,question_number&order=question_number.asc",
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY
-        }
-      }
+    // Find our test
+    const test = tests.find(
+      t => t.title === TEST_TITLE
     );
 
-    if (!tqResponse.ok) {
+    if (!test) {
       throw new Error(
-        "Test questions load failed: " + tqResponse.status
+        "NEET Biology Starter Test nahi mila."
       );
     }
 
-    const testQuestions = await tqResponse.json();
+
+    // Get all test-question links
+    const allTestQuestions = await getData(
+      SUPABASE_URL +
+      "/rest/v1/test_questions?select=*"
+    );
+
+    // Keep only questions belonging to our test
+    const testQuestions =
+      allTestQuestions
+        .filter(tq =>
+          String(tq.test_id) === String(test.id)
+        )
+        .sort(
+          (a, b) =>
+            a.question_number - b.question_number
+        );
+
 
     if (!testQuestions.length) {
-      throw new Error("No questions connected to this test.");
+      throw new Error(
+        "Is test ke saath koi question connected nahi hai."
+      );
     }
 
 
-    // 3. Load actual questions
-    const questionIds = testQuestions
-      .map(item => item.question_id)
-      .join(",");
-
-    const qResponse = await fetch(
+    // Get all questions
+    const allQuestions = await getData(
       SUPABASE_URL +
-      "/rest/v1/questions?id=in.(" +
-      questionIds +
-      ")" +
-      "&select=id,question,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation",
-      {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY
-        }
-      }
+      "/rest/v1/questions?select=*"
     );
 
-    if (!qResponse.ok) {
-      throw new Error(
-        "Questions load failed: " + qResponse.status
-      );
-    }
 
-    const databaseQuestions = await qResponse.json();
+    // Build final question list
+    questions = testQuestions
+      .map(tq => {
 
+        const q = allQuestions.find(
+          item =>
+            String(item.id) ===
+            String(tq.question_id)
+        );
 
-    // 4. Put questions in test order
-    questions = testQuestions.map(tq => {
+        if (!q) return null;
 
-      const q = databaseQuestions.find(
-        item => String(item.id) === String(tq.question_id)
-      );
+        return {
+          id: q.id,
 
-      if (!q) return null;
+          question:
+            q.question || q.question_text,
 
-      return {
-        id: q.id,
+          options: [
+            q.option_a,
+            q.option_b,
+            q.option_c,
+            q.option_d
+          ],
 
-        question:
-          q.question || q.question_text || "Question unavailable",
+          answer:
+            convertAnswer(q.correct_answer),
 
-        options: [
-          q.option_a,
-          q.option_b,
-          q.option_c,
-          q.option_d
-        ],
+          explanation:
+            q.explanation ||
+            "Explanation available nahi hai."
+        };
 
-        answer: convertAnswer(q.correct_answer),
-
-        explanation:
-          q.explanation || "Explanation not available."
-      };
-
-    }).filter(Boolean);
+      })
+      .filter(Boolean);
 
 
     if (!questions.length) {
-      throw new Error("Questions were found, but could not be displayed.");
+      throw new Error(
+        "Questions database se nahi mil rahe."
+      );
     }
 
 
-    userAnswers = new Array(questions.length).fill(null);
+    userAnswers =
+      new Array(questions.length).fill(null);
 
     loadQuestion();
 
+
   } catch (error) {
 
-    console.error("SUPABASE ERROR:", error);
+    console.error(error);
 
     document.getElementById("question").innerText =
-      "Question load error.";
+      "Database se question load nahi hua.";
 
     document.getElementById("options").innerHTML =
-      "<p style='color:red;'>" +
+      "<div style='color:red; padding:10px;'>" +
       error.message +
-      "</p>";
+      "</div>";
 
   }
 
 }
 
 
-// Converts database answer into 0,1,2,3
 function convertAnswer(answer) {
 
   if (answer === null || answer === undefined) {
     return 0;
   }
 
-  const value = String(answer).trim().toUpperCase();
+  const value =
+    String(answer).trim().toUpperCase();
 
-  if (value === "A" || value === "1") return 0;
-  if (value === "B" || value === "2") return 1;
-  if (value === "C" || value === "3") return 2;
-  if (value === "D" || value === "4") return 3;
+  if (value === "A") return 0;
+  if (value === "B") return 1;
+  if (value === "C") return 2;
+  if (value === "D") return 3;
 
+  // Agar database mein 1,2,3,4 stored hai
+  if (value === "1") return 0;
+  if (value === "2") return 1;
+  if (value === "3") return 2;
+  if (value === "4") return 3;
+
+  // Agar database mein 0,1,2,3 stored hai
   if (value === "0") return 0;
 
   return 0;
@@ -466,8 +475,6 @@ function convertAnswer(answer) {
 
 
 function loadQuestion() {
-
-  if (!questions.length) return;
 
   const q = questions[currentQuestion];
 
@@ -484,7 +491,8 @@ function loadQuestion() {
     q.question;
 
   document.getElementById("progress").style.width =
-    ((currentQuestion + 1) / questions.length * 100) + "%";
+    ((currentQuestion + 1) /
+      questions.length * 100) + "%";
 
 
   const optionsContainer =
@@ -495,14 +503,15 @@ function loadQuestion() {
 
   q.options.forEach((option, index) => {
 
-    const div = document.createElement("div");
+    const div =
+      document.createElement("div");
 
     div.className = "option";
 
     div.innerText =
       String.fromCharCode(65 + index) +
       ". " +
-      (option || "");
+      option;
 
     div.onclick = function() {
       selectOption(index);
@@ -522,23 +531,23 @@ function loadQuestion() {
     const options =
       document.querySelectorAll(".option");
 
-    if (options[selectedAnswer]) {
-      options[selectedAnswer].classList.add("selected");
-    }
+    options[selectedAnswer]
+      .classList.add("selected");
 
   }
 
 
-  document.getElementById("explanation").style.display =
-    "none";
+  document.getElementById("explanation")
+    .style.display = "none";
 
-  document.getElementById("checkBtn").style.display =
-    "inline-block";
+  document.getElementById("checkBtn")
+    .style.display = "inline-block";
 
-  document.getElementById("nextBtn").style.display =
-    "none";
+  document.getElementById("nextBtn")
+    .style.display = "none";
 
-  document.getElementById("previousBtn").disabled =
+  document.getElementById("previousBtn")
+    .disabled =
     currentQuestion === 0;
 
 }
@@ -567,8 +576,8 @@ function checkAnswer() {
     alert("Please select an answer first.");
 
     return;
-
   }
+
 
   userAnswers[currentQuestion] =
     selectedAnswer;
@@ -608,18 +617,21 @@ function checkAnswer() {
     "block";
 
 
-  document.getElementById("checkBtn").style.display =
-    "none";
+  document.getElementById("checkBtn")
+    .style.display = "none";
 
-  document.getElementById("nextBtn").style.display =
-    "inline-block";
+  document.getElementById("nextBtn")
+    .style.display = "inline-block";
 
 }
 
 
 function nextQuestion() {
 
-  if (currentQuestion < questions.length - 1) {
+  if (
+    currentQuestion <
+    questions.length - 1
+  ) {
 
     currentQuestion++;
 
@@ -650,44 +662,46 @@ function previousQuestion() {
 function showResult() {
 
   let correct = 0;
+  let wrong = 0;
 
-  userAnswers.forEach((answer, index) => {
+  userAnswers.forEach(
+    (answer, index) => {
 
-    if (
-      answer !== null &&
-      answer === questions[index].answer
-    ) {
-      correct++;
+      if (answer === null) return;
+
+      if (
+        answer ===
+        questions[index].answer
+      ) {
+        correct++;
+      } else {
+        wrong++;
+      }
+
     }
-
-  });
-
-
-  const wrong =
-    userAnswers.filter(
-      (answer, index) =>
-        answer !== null &&
-        answer !== questions[index].answer
-    ).length;
+  );
 
 
-  document.getElementById("questionCard").style.display =
-    "none";
+  document.getElementById("questionCard")
+    .style.display = "none";
 
-  document.querySelector(".top-card").style.display =
-    "none";
+  document.querySelector(".top-card")
+    .style.display = "none";
 
-  document.getElementById("result").style.display =
-    "block";
+  document.getElementById("result")
+    .style.display = "block";
 
 
-  document.getElementById("score").innerText =
+  document.getElementById("score")
+    .innerText =
     correct + "/" + questions.length;
 
-  document.getElementById("correctText").innerText =
+  document.getElementById("correctText")
+    .innerText =
     "Correct answers: " + correct;
 
-  document.getElementById("wrongText").innerText =
+  document.getElementById("wrongText")
+    .innerText =
     "Incorrect answers: " + wrong;
 
 }
@@ -700,24 +714,25 @@ function restartTest() {
   selectedAnswer = null;
 
   userAnswers =
-    new Array(questions.length).fill(null);
+    new Array(questions.length)
+      .fill(null);
 
-  document.getElementById("result").style.display =
-    "none";
+  document.getElementById("result")
+    .style.display = "none";
 
-  document.getElementById("questionCard").style.display =
-    "block";
+  document.getElementById("questionCard")
+    .style.display = "block";
 
-  document.querySelector(".top-card").style.display =
-    "block";
+  document.querySelector(".top-card")
+    .style.display = "block";
 
   loadQuestion();
 
 }
 
 
-// START
-loadQuestionsFromSupabase();
+// Start
+startTest();
 
 </script>
 
