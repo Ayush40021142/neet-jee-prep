@@ -367,16 +367,84 @@ function convertAnswer(answer) {
 ========================= */
 
 async function startTest() {
-
   try {
+    document.getElementById("questionText").innerText = "Loading test...";
 
-    document.getElementById("question").innerText =
-      "Loading questions from database...";
+    // Find test by title
+    const tests = await getData(
+      SUPABASE_URL +
+      "/rest/v1/tests?select=*&title=eq." +
+      encodeURIComponent(TEST_TITLE)
+    );
 
-    /*
-      First get questions connected
-      to Test ID 1
-    */
+    if (!tests || tests.length === 0) {
+      throw new Error("Test not found: " + TEST_TITLE);
+    }
+
+    const test = tests[0];
+
+    // Get questions connected to this test
+    const testQuestions = await getData(
+      SUPABASE_URL +
+      "/rest/v1/test_questions?select=question_number,question_id&test_id=eq." +
+      test.id +
+      "&order=question_number.asc"
+    );
+
+    if (!testQuestions || testQuestions.length === 0) {
+      throw new Error("No questions connected to this test.");
+    }
+
+    // Get actual questions
+    const questionIds = testQuestions
+      .map(item => item.question_id)
+      .join(",");
+
+    const dbQuestions = await getData(
+      SUPABASE_URL +
+      "/rest/v1/questions?select=*&id=in.(" +
+      questionIds +
+      ")"
+    );
+
+    // Put questions in test order
+    questions = testQuestions.map(tq => {
+      const q = dbQuestions.find(
+        item => item.id === tq.question_id
+      );
+
+      return {
+        id: q.id,
+        question: q.question || q.question_text,
+        options: [
+          q.option_a,
+          q.option_b,
+          q.option_c,
+          q.option_d
+        ],
+        answer: convertAnswer(q.correct_answer),
+        explanation: q.explanation || "",
+        difficulty: q.difficulty || "Medium"
+      };
+    });
+
+    userAnswers = new Array(questions.length).fill(null);
+    currentQuestion = 0;
+    selectedAnswer = null;
+
+    loadQuestion();
+    startTimer();
+
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById("questionText").innerHTML =
+      "<span style='color:red'>" +
+      "Error loading test: " +
+      error.message +
+      "</span>";
+  }
+}
 
     const testQuestionsUrl =
       SUPABASE_URL +
