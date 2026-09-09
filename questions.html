@@ -289,12 +289,10 @@
 
 <script>
 
-
-
 const SUPABASE_URL = "https://pkhywkkcvzfcpqxkmbbf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_D02iAMs301aETaagSP48rQ_qR1pMZ5S";
 
-const TEST_TITLE = "NEET Biology Starter Test";
+const TEST_ID = 1;
 
 let questions = [];
 let currentQuestion = 0;
@@ -303,60 +301,10 @@ let userAnswers = [];
 let timeLeft = 30 * 60;
 let timerInterval = null;
 
-function startTimer() {
 
-  if (timerInterval) {
-    clearInterval(timerInterval);
-  }
-
-  const timer = document.createElement("div");
-
-  timer.id = "examTimer";
-
-  timer.style.cssText = `
-    position: fixed;
-    top: 15px;
-    right: 20px;
-    background: #2563eb;
-    color: white;
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 9999;
-  `;
-
-  timer.innerText = "Time: 30:00";
-
-  document.body.appendChild(timer);
-
-  timerInterval = setInterval(() => {
-
-    timeLeft--;
-
-    const minutes =
-      Math.floor(timeLeft / 60);
-
-    const seconds =
-      timeLeft % 60;
-
-    timer.innerText =
-      "Time: " +
-      String(minutes).padStart(2, "0") +
-      ":" +
-      String(seconds).padStart(2, "0");
-
-    if (timeLeft <= 0) {
-
-      clearInterval(timerInterval);
-
-      alert("Time is over! Test submitted.");
-
-      showResult();
-    }
-
-  }, 1000);
-}
+/* =========================
+   SUPABASE DATA
+========================= */
 
 async function getData(url) {
 
@@ -369,7 +317,9 @@ async function getData(url) {
   });
 
   if (!response.ok) {
+
     const errorText = await response.text();
+
     throw new Error(
       "Supabase error " +
       response.status +
@@ -382,142 +332,112 @@ async function getData(url) {
 }
 
 
+/* =========================
+   ANSWER CONVERTER
+========================= */
+
+function convertAnswer(answer) {
+
+  if (answer === null || answer === undefined) {
+    return 0;
+  }
+
+  const value = String(answer)
+    .trim()
+    .toUpperCase();
+
+  if (value === "A") return 0;
+  if (value === "B") return 1;
+  if (value === "C") return 2;
+  if (value === "D") return 3;
+
+  if (value === "1") return 0;
+  if (value === "2") return 1;
+  if (value === "3") return 2;
+  if (value === "4") return 3;
+
+  if (value === "0") return 0;
+
+  return 0;
+}
+
+
+/* =========================
+   START TEST
+========================= */
+
 async function startTest() {
+
   try {
-
-    const url =
-      SUPABASE_URL +
-      "/rest/v1/test_questions" +
-      "?select=question_number,questions(*)" +
-      "&test_id=eq.1" +
-      "&order=question_number.asc";
-
-    const data = await getData(url);
-
-    console.log("TEST DATA:", data);
-
-    if (!data || data.length === 0) {
-      throw new Error("Test ke questions nahi mile.");
-    }
-
-    questions = data
-      .map(item => {
-        const q = item.questions;
-
-        if (!q) return null;
-
-        return {
-          id: q.id,
-
-          question: q.question,
-
-          options: [
-            q.option_a,
-            q.option_b,
-            q.option_c,
-            q.option_d
-          ],
-
-          answer: convertAnswer(q.correct_answer),
-
-          explanation:
-            q.explanation ||
-            "Explanation available nahi hai."
-        };
-      })
-      .filter(Boolean);
-
-    if (questions.length === 0) {
-      throw new Error("Questions database se load nahi hue.");
-    }
-
-    userAnswers =
-      new Array(questions.length).fill(null);
-
-    currentQuestion = 0;
-
-    loadQuestion();
-
-    startTimer();
-
-  } catch (error) {
-
-    console.error("ERROR:", error);
 
     document.getElementById("question").innerText =
-      "Question load nahi hua.";
+      "Loading questions from database...";
 
-    document.getElementById("options").innerHTML =
-      "<div style='color:red; padding:15px;'>" +
-      error.message +
-      "</div>";
-  }
-}
-  try {
+    /*
+      First get questions connected
+      to Test ID 1
+    */
 
-    // Get all tests
-    const tests = await getData(
+    const testQuestionsUrl =
       SUPABASE_URL +
-      "/rest/v1/tests?select=*"
-    );
+      "/rest/v1/test_questions" +
+      "?select=*" +
+      "&test_id=eq." + TEST_ID +
+      "&order=question_number.asc";
 
-    // Find our test
-    const test = tests.find(
-      t => t.title === TEST_TITLE
-    );
-
-    if (!test) {
-      throw new Error(
-        "NEET Biology Starter Test nahi mila."
-      );
-    }
-
-
-    // Get all test-question links
-    const allTestQuestions = await getData(
-      SUPABASE_URL +
-      "/rest/v1/test_questions?select=*"
-    );
-
-    // Keep only questions belonging to our test
     const testQuestions =
-      allTestQuestions
-        .filter(tq =>
-          String(tq.test_id) === String(test.id)
-        )
-        .sort(
-          (a, b) =>
-            a.question_number - b.question_number
-        );
+      await getData(testQuestionsUrl);
 
 
-    if (!testQuestions.length) {
+    console.log("TEST QUESTIONS:", testQuestions);
+
+
+    if (!testQuestions || testQuestions.length === 0) {
+
       throw new Error(
-        "Is test ke saath koi question connected nahi hai."
+        "Test ID 1 ke saath koi questions connected nahi hain."
       );
     }
 
 
-    // Get all questions
-    const allQuestions = await getData(
+    /*
+      Now get actual questions
+    */
+
+    const questionsUrl =
       SUPABASE_URL +
-      "/rest/v1/questions?select=*"
-    );
+      "/rest/v1/questions?select=*";
+
+    const allQuestions =
+      await getData(questionsUrl);
 
 
-    // Build final question list
+    console.log("ALL QUESTIONS:", allQuestions);
+
+
+    /*
+      Connect test_questions
+      with questions table
+    */
+
     questions = testQuestions
-      .map(tq => {
+      .map(function(tq) {
 
-        const q = allQuestions.find(
-          item =>
-            String(item.id) ===
-            String(tq.question_id)
-        );
+        const q = allQuestions.find(function(item) {
 
-        if (!q) return null;
+          return String(item.id) ===
+                 String(tq.question_id);
+
+        });
+
+
+        if (!q) {
+          return null;
+        }
+
 
         return {
+
           id: q.id,
 
           question:
@@ -536,35 +456,59 @@ async function startTest() {
           explanation:
             q.explanation ||
             "Explanation available nahi hai."
+
         };
 
       })
       .filter(Boolean);
 
 
-    if (!questions.length) {
+    console.log("FINAL QUESTIONS:", questions);
+
+
+    if (questions.length === 0) {
+
       throw new Error(
-        "Questions database se nahi mil rahe."
+        "Questions database se load nahi hue."
       );
     }
 
 
+    /*
+      Reset test
+    */
+
+    currentQuestion = 0;
+
+    selectedAnswer = null;
+
     userAnswers =
       new Array(questions.length).fill(null);
 
+
+    /*
+      Show first question
+    */
+
     loadQuestion();
+
     startTimer();
 
+  }
 
-  } catch (error) {
 
-    console.error(error);
+  catch (error) {
+
+    console.error("START TEST ERROR:", error);
+
 
     document.getElementById("question").innerText =
-      "Database se question load nahi hua.";
+      "Question load nahi hua.";
+
 
     document.getElementById("options").innerHTML =
-      "<div style='color:red; padding:10px;'>" +
+      "<div style='color:red; padding:15px; background:#fee2e2; border-radius:8px;'>" +
+      "<strong>Error:</strong><br>" +
       error.message +
       "</div>";
 
@@ -573,39 +517,109 @@ async function startTest() {
 }
 
 
-function convertAnswer(answer) {
+/* =========================
+   TIMER
+========================= */
 
-  if (answer === null || answer === undefined) {
-    return 0;
+function startTimer() {
+
+  if (timerInterval) {
+    clearInterval(timerInterval);
   }
 
-  const value =
-    String(answer).trim().toUpperCase();
 
-  if (value === "A") return 0;
-  if (value === "B") return 1;
-  if (value === "C") return 2;
-  if (value === "D") return 3;
+  const oldTimer =
+    document.getElementById("examTimer");
 
-  // Agar database mein 1,2,3,4 stored hai
-  if (value === "1") return 0;
-  if (value === "2") return 1;
-  if (value === "3") return 2;
-  if (value === "4") return 3;
+  if (oldTimer) {
+    oldTimer.remove();
+  }
 
-  // Agar database mein 0,1,2,3 stored hai
-  if (value === "0") return 0;
 
-  return 0;
+  timeLeft = 30 * 60;
+
+
+  const timer =
+    document.createElement("div");
+
+
+  timer.id = "examTimer";
+
+
+  timer.style.cssText = `
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    background: #2563eb;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 9999;
+  `;
+
+
+  timer.innerText = "Time: 30:00";
+
+
+  document.body.appendChild(timer);
+
+
+  timerInterval = setInterval(function() {
+
+    timeLeft--;
+
+
+    const minutes =
+      Math.floor(timeLeft / 60);
+
+
+    const seconds =
+      timeLeft % 60;
+
+
+    timer.innerText =
+      "Time: " +
+      String(minutes).padStart(2, "0") +
+      ":" +
+      String(seconds).padStart(2, "0");
+
+
+    if (timeLeft <= 0) {
+
+      clearInterval(timerInterval);
+
+      alert("Time is over! Test submitted.");
+
+      showResult();
+
+    }
+
+  }, 1000);
+
 }
 
 
+/* =========================
+   LOAD QUESTION
+========================= */
+
 function loadQuestion() {
 
-  const q = questions[currentQuestion];
+  const q =
+    questions[currentQuestion];
+
+
+  if (!q) {
+    return;
+  }
+
 
   document.getElementById("questionNumber").innerText =
-    "Question " + (currentQuestion + 1);
+    "Question " +
+    (currentQuestion + 1);
+
 
   document.getElementById("progressText").innerText =
     "Question " +
@@ -613,35 +627,44 @@ function loadQuestion() {
     " of " +
     questions.length;
 
+
   document.getElementById("question").innerText =
     q.question;
 
+
   document.getElementById("progress").style.width =
     ((currentQuestion + 1) /
-      questions.length * 100) + "%";
+    questions.length * 100) + "%";
 
 
   const optionsContainer =
     document.getElementById("options");
 
+
   optionsContainer.innerHTML = "";
 
 
-  q.options.forEach((option, index) => {
+  q.options.forEach(function(option, index) {
 
     const div =
       document.createElement("div");
 
+
     div.className = "option";
+
 
     div.innerText =
       String.fromCharCode(65 + index) +
       ". " +
       option;
 
+
     div.onclick = function() {
+
       selectOption(index);
+
     };
+
 
     optionsContainer.appendChild(div);
 
@@ -649,7 +672,7 @@ function loadQuestion() {
 
 
   selectedAnswer =
-    userAnswers[currentQuestion] ?? null;
+    userAnswers[currentQuestion];
 
 
   if (selectedAnswer !== null) {
@@ -657,8 +680,13 @@ function loadQuestion() {
     const options =
       document.querySelectorAll(".option");
 
-    options[selectedAnswer]
-      .classList.add("selected");
+
+    if (options[selectedAnswer]) {
+
+      options[selectedAnswer]
+        .classList.add("selected");
+
+    }
 
   }
 
@@ -666,11 +694,14 @@ function loadQuestion() {
   document.getElementById("explanation")
     .style.display = "none";
 
+
   document.getElementById("checkBtn")
     .style.display = "inline-block";
 
+
   document.getElementById("nextBtn")
     .style.display = "none";
+
 
   document.getElementById("previousBtn")
     .disabled =
@@ -679,72 +710,82 @@ function loadQuestion() {
 }
 
 
+/* =========================
+   SELECT OPTION
+========================= */
+
 function selectOption(index) {
 
   selectedAnswer = index;
 
+
   const options =
     document.querySelectorAll(".option");
 
-  options.forEach(option => {
+
+  options.forEach(function(option) {
+
     option.classList.remove("selected");
+
   });
 
-  options[index].classList.add("selected");
+
+  if (options[index]) {
+
+    options[index]
+      .classList.add("selected");
+
+  }
 
 }
 
+
+/* =========================
+   CHECK ANSWER
+========================= */
 
 function checkAnswer() {
-  if (selectedAnswer === null) {
-    alert("Please select an answer first.");
-    return;
-  }
-
-  userAnswers[currentQuestion] = selectedAnswer;
-
-  const q = questions[currentQuestion];
-  const correctAnswer = q.correct_answer;
-
-  if (selectedAnswer === correctAnswer) {
-    alert("✅ Correct! +4 marks");
-  } else {
-    alert("❌ Wrong! -1 mark");
-  }
-
-  updateProgress();
-}
 
   if (selectedAnswer === null) {
 
     alert("Please select an answer first.");
 
     return;
+
   }
 
 
   userAnswers[currentQuestion] =
     selectedAnswer;
 
-  const q = questions[currentQuestion];
+
+  const q =
+    questions[currentQuestion];
+
 
   const options =
     document.querySelectorAll(".option");
 
 
-  options.forEach((option, index) => {
+  options.forEach(function(option, index) {
 
     option.onclick = null;
 
+
     if (index === q.answer) {
+
       option.classList.add("correct");
+
     }
+
 
     if (
       index === selectedAnswer &&
       selectedAnswer !== q.answer
     ) {
+
       option.classList.add("wrong");
+
     }
 
   });
@@ -753,9 +794,11 @@ function checkAnswer() {
   const explanation =
     document.getElementById("explanation");
 
+
   explanation.innerHTML =
     "<strong>Explanation:</strong><br>" +
     q.explanation;
+
 
   explanation.style.display =
     "block";
@@ -764,11 +807,16 @@ function checkAnswer() {
   document.getElementById("checkBtn")
     .style.display = "none";
 
+
   document.getElementById("nextBtn")
     .style.display = "inline-block";
 
 }
 
+
+/* =========================
+   NEXT QUESTION
+========================= */
 
 function nextQuestion() {
 
@@ -781,7 +829,9 @@ function nextQuestion() {
 
     loadQuestion();
 
-  } else {
+  }
+
+  else {
 
     showResult();
 
@@ -789,6 +839,10 @@ function nextQuestion() {
 
 }
 
+
+/* =========================
+   PREVIOUS QUESTION
+========================= */
 
 function previousQuestion() {
 
@@ -803,78 +857,74 @@ function previousQuestion() {
 }
 
 
+/* =========================
+   RESULT
+========================= */
+
 function showResult() {
+
   clearInterval(timerInterval);
+
 
   let correct = 0;
   let wrong = 0;
   let unanswered = 0;
 
-  questions.forEach((q, index) => {
-    const answer = userAnswers[index];
 
-    if (!answer) {
+  userAnswers.forEach(function(answer, index) {
+
+    if (answer === null) {
+
       unanswered++;
-    } else if (answer === q.correct_answer) {
-      correct++;
-    } else {
-      wrong++;
+
     }
+
+    else if (
+      answer === questions[index].answer
+    ) {
+
+      correct++;
+
+    }
+
+    else {
+
+      wrong++;
+
+    }
+
   });
 
-  const score = (correct * 4) - (wrong * 1);
-  const totalMarks = questions.length * 4;
-  const accuracy = questions.length
-    ? ((correct / questions.length) * 100).toFixed(1)
-    : 0;
 
-  document.querySelector(".question-card").innerHTML = `
-    <div style="text-align:center; padding:40px 20px;">
-      <h2>🎉 Test Completed!</h2>
+  /*
+    NEET marking:
+    Correct = +4
+    Wrong = -1
+    Unanswered = 0
+  */
 
-      <h1 style="font-size:48px; margin:20px 0;">
-        ${score} / ${totalMarks}
-      </h1>
+  const score =
+    (correct * 4) -
+    (wrong * 1);
 
-      <p>✅ Correct: <strong>${correct}</strong></p>
-      <p>❌ Wrong: <strong>${wrong}</strong></p>
-      <p>⭕ Unanswered: <strong>${unanswered}</strong></p>
-      <p>📊 Accuracy: <strong>${accuracy}%</strong></p>
 
-      <button onclick="restartTest()" 
-        style="margin-top:25px; padding:12px 25px; cursor:pointer;">
-        Restart Test
-      </button>
-    </div>
-  `;
-}
+  const totalMarks =
+    questions.length * 4;
 
-  let correct = 0;
-  let wrong = 0;
 
-  userAnswers.forEach(
-    (answer, index) => {
-
-      if (answer === null) return;
-
-      if (
-        answer ===
-        questions[index].answer
-      ) {
-        correct++;
-      } else {
-        wrong++;
-      }
-
-    }
-  );
+  const accuracy =
+    questions.length > 0
+      ? ((correct / questions.length) * 100).toFixed(1)
+      : 0;
 
 
   document.getElementById("questionCard")
     .style.display = "none";
 
+
   document.querySelector(".top-card")
     .style.display = "none";
+
 
   document.getElementById("result")
     .style.display = "block";
@@ -882,48 +932,68 @@ function showResult() {
 
   document.getElementById("score")
     .innerText =
-    correct + "/" + questions.length;
+    score + " / " + totalMarks;
+
 
   document.getElementById("correctText")
     .innerText =
-    "Correct answers: " + correct;
+    "Correct: " + correct +
+    " | Wrong: " + wrong +
+    " | Unanswered: " + unanswered;
+
 
   document.getElementById("wrongText")
     .innerText =
-    "Incorrect answers: " + wrong;
+    "Accuracy: " + accuracy + "%";
 
 }
 
 
+/* =========================
+   RESTART
+========================= */
+
 function restartTest() {
+
+  clearInterval(timerInterval);
+
 
   currentQuestion = 0;
 
   selectedAnswer = null;
 
+
   userAnswers =
     new Array(questions.length)
       .fill(null);
 
+
   document.getElementById("result")
     .style.display = "none";
+
 
   document.getElementById("questionCard")
     .style.display = "block";
 
+
   document.querySelector(".top-card")
     .style.display = "block";
 
+
   loadQuestion();
+
+  startTimer();
 
 }
 
 
-// Start
+/* =========================
+   START
+========================= */
+
 startTest();
 
 </script>
-
 
 
 </body>
